@@ -4,9 +4,7 @@ import (
 	"BinList/app/bins"
 	"BinList/app/files"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -19,10 +17,6 @@ func NewStorage() (*Storage, string, error) {
 	var nameFiles string
 	fmt.Println("Укажите название файла, к которому вы хотите добавить бинлист или же создвать новый файл, заполнив с нуля. (Обязательно в формате JSON)")
 	fmt.Scan(&nameFiles)
-	isMatched := strings.HasSuffix(nameFiles, ".json")
-	if !isMatched {
-		return nil, "", errors.New("Вы указали неправильный формат. Заполните по следующему образцу: nameFile.json")
-	}
 	data, err := files.ReadFile(nameFiles)
 	if err != nil {
 		fmt.Println("Создаем новый файл:", nameFiles)
@@ -60,10 +54,6 @@ func ToBytes() (*Storage, error) {
 	var nameFiles string
 	fmt.Println("Укажите название файла, из которого выхотите прочитать бины. (Обязательно в формате JSON)")
 	fmt.Scan(&nameFiles)
-	isMatched := strings.HasSuffix(nameFiles, ".json")
-	if !isMatched {
-		return nil, errors.New("Вы указали неправильный формат. Заполните по следующему образцу: nameFile.json")
-	}
 	data, err := files.ReadFile(nameFiles)
 	if err != nil {
 		return nil, err
