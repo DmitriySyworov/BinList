@@ -2,8 +2,11 @@ package main
 
 import (
 	"BinList/app/bins"
+	"BinList/app/files"
 	"BinList/app/storage"
 	"fmt"
+
+	"github.com/fatih/color"
 )
 
 func main() {
@@ -13,34 +16,39 @@ func getMenu() {
 	fmt.Println("__Бинлист_Менеджер__")
 exit:
 	for {
-		var choice int
-		fmt.Println(`Укажите вариант выбора:
+		choice := promtData([]string{`Укажите вариант выбора:
 1. Добавить бин в уже существующий файл/создать новый файл с бинами
 2. Прочитать файл JSON
-3. Выход`)
+3. Выход`})
 		fmt.Scan(&choice)
 		switch choice {
-		case 1:
+		case "1":
 			var name, id, private string
-			fmt.Println("Укажите имя")
+			promtData([]string{"Укажите имя"})
 			fmt.Scan(&name)
-			fmt.Println("Укажите ID")
+			promtData([]string{"Укажите ID"})
 			fmt.Scan(&id)
-			fmt.Println("Укажите статус приватности: true - публичный, false - приватный")
+			promtData([]string{"Укажите статус приватности: true - публичный, false - приватный"})
 			fmt.Scan(&private)
 			Bin, err := bins.NewBin(name, id, private)
 			if err != nil {
 				fmt.Println(err)
 				break exit
 			}
-			vault, nameFile, erro := storage.NewStorage()
+			var nameFiles string
+			promtData([]string{"Укажите название файла, из которого выхотите прочитать бины. (Обязательно в формате JSON)"})
+			fmt.Scan(&nameFiles)
+			vault, names, erro := storage.NewStorage(files.NewJsonDb(nameFiles))
 			if erro != nil {
 				fmt.Println(erro)
 				break exit
 			}
-			vault.AddStorage(*Bin, nameFile)
-		case 2:
-			bin, err3 := storage.NewReadFile()
+			vault.AddStorage(*Bin, names)
+		case "2":
+			var nameFiles string
+			promtData([]string{"Укажите название файла, из которого выхотите прочитать бины. (Обязательно в формате JSON)"})
+			fmt.Scan(&nameFiles)
+			bin, err3 := storage.NewReadFile(files.NewJsonDb(nameFiles))
 			if err3 != nil {
 				fmt.Println("Такого файла не существует, либо же вы неправильно указали формат")
 				break exit
@@ -48,7 +56,7 @@ exit:
 			for _, value := range bin.Bins {
 				value.OutputBins()
 			}
-		case 3:
+		case "3":
 			fmt.Println("Конец программы")
 			break exit
 		default:
@@ -57,4 +65,11 @@ exit:
 
 		}
 	}
+}
+func promtData[T any](promt []T) string {
+	var usChoice string
+	for _, value := range promt {
+		color.Cyan("%v", value)
+	}
+	return usChoice
 }

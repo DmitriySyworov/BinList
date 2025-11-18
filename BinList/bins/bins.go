@@ -16,7 +16,7 @@ type Bin struct {
 func NewBin(name, id, private string) (*Bin, error) {
 	resPrivate := false
 	for _, value := range name {
-		if value < 'a' && value > 'z' && value < 'A' && value > 'Z' && value != ' ' {
+		if (value < 'a' || value > 'z') && (value < 'A' || value > 'Z') {
 			return nil, errors.New("Указано не корректное имя")
 		}
 	}

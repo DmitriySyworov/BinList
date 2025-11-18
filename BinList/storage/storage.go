@@ -2,38 +2,51 @@ package storage
 
 import (
 	"BinList/app/bins"
-	"BinList/app/files"
 	"encoding/json"
 	"fmt"
 	"time"
 )
 
+type Db interface {
+	Read() ([]byte, string, error, error)
+	Write(data []byte) (error, error)
+}
 type Storage struct {
 	Bins     []bins.Bin `json:"Bins"`
 	UpdateAt time.Time  `json:"updateAt"`
 }
+type StorageWithBd struct {
+	Storage
+	Db
+}
 
-func NewStorage() (*Storage, string, error) {
-	var nameFiles string
-	fmt.Println("Укажите название файла, к которому вы хотите добавить бинлист или же создвать новый файл, заполнив с нуля. (Обязательно в формате JSON)")
-	fmt.Scan(&nameFiles)
-	data, err := files.ReadFile(nameFiles)
-	if err != nil {
-		fmt.Println("Создаем новый файл:", nameFiles)
-		return &Storage{
-			[]bins.Bin{},
-			time.Now(),
-		}, nameFiles, nil
+func NewStorage(db Db) (*StorageWithBd, string, error) {
+	data, names, err, errorImportant := db.Read()
+	if errorImportant != nil {
+		return nil, names, errorImportant
 	}
-	fmt.Println("Добавляем Бин в уже существующий файл:", nameFiles)
+	if err != nil {
+		fmt.Println("Создаем новый файл:", names)
+		return &StorageWithBd{
+			Storage: Storage{
+				[]bins.Bin{},
+				time.Now(),
+			},
+			Db: db,
+		}, names, nil
+	}
+	fmt.Println("Добавляем Бин в уже существующий файл:", names)
 	var bins Storage
 	err2 := json.Unmarshal(data, &bins)
 	if err2 != nil {
-		return nil, nameFiles, nil
+		return nil, names, nil
 	}
-	return &bins, nameFiles, nil
+	return &StorageWithBd{
+		Storage: bins,
+		Db:      db,
+	}, names, nil
 }
-func (bins *Storage) AddStorage(bin bins.Bin, name string) {
+func (bins *StorageWithBd) AddStorage(bin bins.Bin, name string) {
 	bins.Bins = append(bins.Bins, bin)
 	bins.UpdateAt = time.Now()
 	file, err := json.Marshal(bins)
@@ -41,20 +54,13 @@ func (bins *Storage) AddStorage(bin bins.Bin, name string) {
 		fmt.Println(err)
 		return
 	}
-	files.WriteFiles(name, file)
+	bins.Db.Write(file)
 }
-func NewReadFile() (*Storage, error) {
-	binss, err := ToBytes()
-	if err != nil {
-		return nil, err
+func NewReadFile(db Db) (*Storage, error) {
+	data, _, err, errorImportant := db.Read()
+	if errorImportant != nil {
+		return nil, errorImportant
 	}
-	return binss, nil
-}
-func ToBytes() (*Storage, error) {
-	var nameFiles string
-	fmt.Println("Укажите название файла, из которого выхотите прочитать бины. (Обязательно в формате JSON)")
-	fmt.Scan(&nameFiles)
-	data, err := files.ReadFile(nameFiles)
 	if err != nil {
 		return nil, err
 	}
