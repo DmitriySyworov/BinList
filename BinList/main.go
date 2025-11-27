@@ -7,69 +7,121 @@ import (
 	"fmt"
 
 	"github.com/fatih/color"
+	"github.com/joho/godotenv"
 )
 
-func main() {
-	getMenu()
+var menu = map[string]func(){
+	"1": createdBin,
+	"2": readerJson,
+	"3": findBins,
 }
-func getMenu() {
-	fmt.Println("__Бинлист_Менеджер__")
-exit:
+
+func main() {
+	errEnv := godotenv.Load()
+	if errEnv != nil {
+		printErr("Не удалось получить переменные окружения. Дальнейшее выполнение программы невозможно!")
+	}
+	color.Yellow("__Бинлист_Менеджер__")
 	for {
-		choice := promtData([]string{`Укажите вариант выбора:
+		var choice string
+		color.Blue(`Укажите вариант выбора:
 1. Добавить бин в уже существующий файл/создать новый файл с бинами
 2. Прочитать файл JSON
-3. Выход`})
+3. Найти определенный бин
+4. Выход`)
 		fmt.Scan(&choice)
-		switch choice {
-		case "1":
-			var name, id, private string
-			promtData([]string{"Укажите имя"})
-			fmt.Scan(&name)
-			promtData([]string{"Укажите ID"})
-			fmt.Scan(&id)
-			promtData([]string{"Укажите статус приватности: true - публичный, false - приватный"})
-			fmt.Scan(&private)
-			Bin, err := bins.NewBin(name, id, private)
-			if err != nil {
-				fmt.Println(err)
-				break exit
-			}
-			var nameFiles string
-			promtData([]string{"Укажите название файла, из которого выхотите прочитать бины. (Обязательно в формате JSON)"})
-			fmt.Scan(&nameFiles)
-			vault, names, erro := storage.NewStorage(files.NewJsonDb(nameFiles))
-			if erro != nil {
-				fmt.Println(erro)
-				break exit
-			}
-			vault.AddStorage(*Bin, names)
-		case "2":
-			var nameFiles string
-			promtData([]string{"Укажите название файла, из которого выхотите прочитать бины. (Обязательно в формате JSON)"})
-			fmt.Scan(&nameFiles)
-			bin, err3 := storage.NewReadFile(files.NewJsonDb(nameFiles))
-			if err3 != nil {
-				fmt.Println("Такого файла не существует, либо же вы неправильно указали формат")
-				break exit
-			}
-			for _, value := range bin.Bins {
-				value.OutputBins()
-			}
-		case "3":
-			fmt.Println("Конец программы")
-			break exit
-		default:
-			fmt.Println("Такого варианта выбора не существует, пожалуйста повторите ввод")
-			continue
-
+		funcMenu := menu[choice]
+		if funcMenu == nil {
+			printErr("Конец программы")
+			return
 		}
+		funcMenu()
 	}
 }
-func promtData[T any](promt []T) string {
-	var usChoice string
-	for _, value := range promt {
-		color.Cyan("%v", value)
+func createdBin() {
+	var name, id, private, nameFiles string
+	color.Cyan("Укажите имя")
+	fmt.Scan(&name)
+	color.Cyan("Укажите ID")
+	fmt.Scan(&id)
+	color.Cyan("Укажите статус приватности: true - публичный, false - приватный")
+	fmt.Scan(&private)
+	Bin, err := bins.NewBin(name, id, private)
+	if err != nil {
+		printErr(err)
+		return
 	}
-	return usChoice
+	color.Cyan("Укажите название файла (Обязательно в формате JSON)")
+	fmt.Scan(&nameFiles)
+	storages, names, erro := storage.NewStorage(files.NewJsonDb(nameFiles))
+	if erro != nil {
+		printErr(erro)
+		return
+	} else {
+		color.Green("Запись в файл %s прошла успешно\n", nameFiles)
+	}
+	erro = storages.AddStorage(*Bin, names)
+	if erro != nil {
+		printErr(erro)
+	}
+}
+func readerJson() {
+	var nameFiles string
+	color.Cyan("Укажите название файла (Обязательно в формате JSON)")
+	fmt.Scan(&nameFiles)
+	bin, err3 := storage.NewReadFile(files.NewJsonDb(nameFiles))
+	if err3 != nil {
+		printErr("Такого файла не существует, либо же вы неправильно указали формат")
+		return
+	}
+	for _, value := range bin.Bins {
+		value.OutputBins()
+	}
+}
+func findBins() {
+	var searchStr, searchChoice, nameFiles string
+	color.Cyan("Укажите название файла json, где находится бин, который вы ищете")
+	fmt.Scan(&nameFiles)
+	color.Cyan("Укажите каким образом вы хотите найти Бин по name или ID?")
+	fmt.Scan(&searchChoice)
+	storages, _, err := storage.NewStorage(files.NewJsonDb(nameFiles))
+	if err != nil {
+		printErr(err)
+		return
+	}
+	switch searchChoice {
+	case "name":
+		color.Cyan("Укажите точное имя бина")
+		fmt.Scan(&searchStr)
+		foundBin, err := storages.FindBin(searchStr, func(bin *bins.Bin, str string) bool { return bin.Name == str })
+		SaveFind(foundBin, err)
+	case "ID":
+		color.Cyan("Укажите точное ID бина")
+		fmt.Scan(&searchStr)
+		foundBin, err := storages.FindBin(searchStr, func(bin *bins.Bin, str string) bool { return bin.Id == str })
+		SaveFind(foundBin, err)
+	default:
+		printErr("Такого варианта выбора не существует")
+		return
+	}
+}
+func SaveFind(findBin []bins.Bin, err error) {
+	if err != nil {
+		printErr(err)
+	}
+	for _, b := range findBin {
+		color.Magenta("Name: %s\nID: %s\nPrivate: %t\ntime of creation: %s\n", b.Name, b.Id, b.Private, b.CreatedAt)
+	}
+}
+func printErr(err any) {
+	switch v := err.(type) {
+	case string:
+		color.Red(v)
+	case error:
+		color.Red(v.Error())
+	case int:
+		color.Red("Код ошибки:", v)
+	default:
+		color.Red("Неизвестная ошибка")
+	}
 }

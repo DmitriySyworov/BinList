@@ -3,7 +3,7 @@ package storage
 import (
 	"BinList/app/bins"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"time"
 )
 
@@ -26,7 +26,6 @@ func NewStorage(db Db) (*StorageWithBd, string, error) {
 		return nil, names, errorImportant
 	}
 	if err != nil {
-		fmt.Println("Создаем новый файл:", names)
 		return &StorageWithBd{
 			Storage: Storage{
 				[]bins.Bin{},
@@ -35,7 +34,6 @@ func NewStorage(db Db) (*StorageWithBd, string, error) {
 			Db: db,
 		}, names, nil
 	}
-	fmt.Println("Добавляем Бин в уже существующий файл:", names)
 	var bins Storage
 	err2 := json.Unmarshal(data, &bins)
 	if err2 != nil {
@@ -46,15 +44,28 @@ func NewStorage(db Db) (*StorageWithBd, string, error) {
 		Db:      db,
 	}, names, nil
 }
-func (bins *StorageWithBd) AddStorage(bin bins.Bin, name string) {
+func (bins *StorageWithBd) AddStorage(bin bins.Bin, name string) error {
 	bins.Bins = append(bins.Bins, bin)
 	bins.UpdateAt = time.Now()
 	file, err := json.Marshal(bins)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 	bins.Db.Write(file)
+	return nil
+}
+func (bin *StorageWithBd) FindBin(str string, checker func(*bins.Bin, string) bool) ([]bins.Bin, error) {
+	findBins := []bins.Bin{}
+	for _, b := range bin.Bins {
+		isMatched := checker(&b, str)
+		if isMatched {
+			findBins = append(findBins, b)
+		}
+	}
+	if len(findBins) != 0 {
+		return findBins, nil
+	}
+	return nil, errors.New("По указанным данным не удалось найти аккаунт")
 }
 func NewReadFile(db Db) (*Storage, error) {
 	data, _, err, errorImportant := db.Read()
