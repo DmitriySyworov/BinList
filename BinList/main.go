@@ -1,58 +1,59 @@
 package main
 
 import (
+	"BinList/app/api"
 	"BinList/app/bins"
 	"BinList/app/files"
 	"BinList/app/storage"
+	"flag"
 	"fmt"
 
 	"github.com/fatih/color"
 	"github.com/joho/godotenv"
 )
 
-var menu = map[string]func(){
-	"1": createdBin,
-	"2": readerJson,
-	"3": findBins,
-}
-
 func main() {
 	errEnv := godotenv.Load()
 	if errEnv != nil {
 		printErr("Не удалось получить переменные окружения. Дальнейшее выполнение программы невозможно!")
 	}
-	color.Yellow("__Бинлист_Менеджер__")
-	for {
-		var choice string
-		color.Blue(`Укажите вариант выбора:
-1. Добавить бин в уже существующий файл/создать новый файл с бинами
-2. Прочитать файл JSON
-3. Найти определенный бин
-4. Выход`)
-		fmt.Scan(&choice)
-		funcMenu := menu[choice]
-		if funcMenu == nil {
-			printErr("Конец программы")
-			return
-		}
-		funcMenu()
+	create := flag.Bool("create", false, "create Bin")
+	update := flag.Bool("update", false, "update Bin")
+	delete := flag.Bool("delete", false, "delete Bin")
+	get := flag.Bool("get", false, "get Bin")
+	list := flag.Bool("list", false, "list Bin")
+	file := flag.String("file", "", "file name")
+	name := flag.String("name", "", "name")
+	id := flag.String("id", "", "id")
+	flag.Parse()
+	switch {
+	case *create:
+		createdBin(*name, *id, *file)
+	case *update:
+	case *delete:
+	case *get:
+		getBins(*id)
+	case *list:
 	}
 }
-func createdBin() {
-	var name, id, private, nameFiles string
-	color.Cyan("Укажите имя")
-	fmt.Scan(&name)
-	color.Cyan("Укажите ID")
-	fmt.Scan(&id)
+func createdBin(name, id, nameFiles string) {
+	var private string
+	resPrivate := false
 	color.Cyan("Укажите статус приватности: true - публичный, false - приватный")
 	fmt.Scan(&private)
-	Bin, err := bins.NewBin(name, id, private)
+	if private != "true" && private != "false" {
+		fmt.Println("Статус приватности должен быть  true  или  false")
+		return
+	} else if private == "true" {
+		resPrivate = true
+	}
+	var ap api.Api
+	ap.CreatedBin(private)
+	Bin, err := bins.NewBin(name, id, resPrivate)
 	if err != nil {
 		printErr(err)
 		return
 	}
-	color.Cyan("Укажите название файла (Обязательно в формате JSON)")
-	fmt.Scan(&nameFiles)
 	storages, names, erro := storage.NewStorage(files.NewJsonDb(nameFiles))
 	if erro != nil {
 		printErr(erro)
@@ -78,41 +79,17 @@ func readerJson() {
 		value.OutputBins()
 	}
 }
-func findBins() {
-	var searchStr, searchChoice, nameFiles string
-	color.Cyan("Укажите название файла json, где находится бин, который вы ищете")
-	fmt.Scan(&nameFiles)
-	color.Cyan("Укажите каким образом вы хотите найти Бин по name или ID?")
-	fmt.Scan(&searchChoice)
-	storages, _, err := storage.NewStorage(files.NewJsonDb(nameFiles))
-	if err != nil {
-		printErr(err)
-		return
-	}
-	switch searchChoice {
-	case "name":
-		color.Cyan("Укажите точное имя бина")
-		fmt.Scan(&searchStr)
-		foundBin, err := storages.FindBin(searchStr, func(bin *bins.Bin, str string) bool { return bin.Name == str })
-		SaveFind(foundBin, err)
-	case "ID":
-		color.Cyan("Укажите точное ID бина")
-		fmt.Scan(&searchStr)
-		foundBin, err := storages.FindBin(searchStr, func(bin *bins.Bin, str string) bool { return bin.Id == str })
-		SaveFind(foundBin, err)
-	default:
-		printErr("Такого варианта выбора не существует")
-		return
-	}
-}
-func SaveFind(findBin []bins.Bin, err error) {
-	if err != nil {
-		printErr(err)
-	}
-	for _, b := range findBin {
+func getBins(id string) {
+	var storages storage.StorageWithBd
+	foundBin, err := storages.FindBin(id)
+	for _, b := range foundBin {
 		color.Magenta("Name: %s\nID: %s\nPrivate: %t\ntime of creation: %s\n", b.Name, b.Id, b.Private, b.CreatedAt)
 	}
+	if err != nil {
+		return
+	}
 }
+
 func printErr(err any) {
 	switch v := err.(type) {
 	case string:

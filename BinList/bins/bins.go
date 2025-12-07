@@ -13,8 +13,7 @@ type Bin struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
-func NewBin(name, id, private string) (*Bin, error) {
-	resPrivate := false
+func NewBin(name, id string, private bool) (*Bin, error) {
 	for _, value := range name {
 		if (value < 'a' || value > 'z') && (value < 'A' || value > 'Z') {
 			return nil, errors.New("Указано не корректное имя")
@@ -23,15 +22,10 @@ func NewBin(name, id, private string) (*Bin, error) {
 	if len(id) != 6 {
 		return nil, errors.New("ID указан некорректно: ID должен состоять из 6 символов")
 	}
-	if private != "true" && private != "false" {
-		return nil, errors.New("Статус приватности должен быть  true  или  false")
-	} else if private == "true" {
-		resPrivate = true
-	}
 	return &Bin{
 		Name:      name,
 		Id:        id,
-		Private:   resPrivate,
+		Private:   private,
 		CreatedAt: time.Now(),
 	}, nil
 }

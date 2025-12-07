@@ -3,15 +3,21 @@ package config
 import "os"
 
 type Config struct {
-	Key string
+	MasterKey string
+	AccessKey string
 }
 
 func NewConfig() *Config {
-	keyEnv := os.Getenv("KEY")
-	if keyEnv == "" {
-		panic("Переменная окружения KEY  не задана!")
+	keyMaster := os.Getenv("MasterKey")
+	if keyMaster == "" {
+		panic("Переменная окружения MasterKey  не задана!")
+	}
+	keyAccess := os.Getenv("AccessKey")
+	if keyAccess == "" {
+		panic("Переменная окружения AccessKey не задана!")
 	}
 	return &Config{
-		Key: keyEnv,
+		MasterKey: keyMaster,
+		AccessKey: keyAccess,
 	}
 }

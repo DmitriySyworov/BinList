@@ -54,11 +54,11 @@ func (bins *StorageWithBd) AddStorage(bin bins.Bin, name string) error {
 	bins.Db.Write(file)
 	return nil
 }
-func (bin *StorageWithBd) FindBin(str string, checker func(*bins.Bin, string) bool) ([]bins.Bin, error) {
+func (bin *StorageWithBd) FindBin(id string) ([]bins.Bin, error) {
 	findBins := []bins.Bin{}
+	var binss bins.Bin
 	for _, b := range bin.Bins {
-		isMatched := checker(&b, str)
-		if isMatched {
+		if binss.Id == id {
 			findBins = append(findBins, b)
 		}
 	}
