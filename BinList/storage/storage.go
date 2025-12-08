@@ -3,7 +3,6 @@ package storage
 import (
 	"BinList/app/bins"
 	"encoding/json"
-	"errors"
 	"time"
 )
 
@@ -44,7 +43,7 @@ func NewStorage(db Db) (*StorageWithBd, string, error) {
 		Db:      db,
 	}, names, nil
 }
-func (bins *StorageWithBd) AddStorage(bin bins.Bin, name string) error {
+func (bins *StorageWithBd) AddStorage(bin bins.Bin) error {
 	bins.Bins = append(bins.Bins, bin)
 	bins.UpdateAt = time.Now()
 	file, err := json.Marshal(bins)
@@ -53,32 +52,4 @@ func (bins *StorageWithBd) AddStorage(bin bins.Bin, name string) error {
 	}
 	bins.Db.Write(file)
 	return nil
-}
-func (bin *StorageWithBd) FindBin(id string) ([]bins.Bin, error) {
-	findBins := []bins.Bin{}
-	var binss bins.Bin
-	for _, b := range bin.Bins {
-		if binss.Id == id {
-			findBins = append(findBins, b)
-		}
-	}
-	if len(findBins) != 0 {
-		return findBins, nil
-	}
-	return nil, errors.New("По указанным данным не удалось найти аккаунт")
-}
-func NewReadFile(db Db) (*Storage, error) {
-	data, _, err, errorImportant := db.Read()
-	if errorImportant != nil {
-		return nil, errorImportant
-	}
-	if err != nil {
-		return nil, err
-	}
-	var binss Storage
-	err2 := json.Unmarshal(data, &binss)
-	if err2 != nil {
-		return nil, err2
-	}
-	return &binss, nil
 }
