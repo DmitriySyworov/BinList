@@ -19,6 +19,11 @@ import (
 type Api struct {
 	keyEnv *config.Config
 }
+func Newapi()*Api{
+	return &Api{
+		keyEnv: config.NewConfig(),
+	}
+}
 func (api Api) CreatedBin(name, file string) {
 	var status string
 	fmt.Println("Укажите статус true - публичный, false - приватный")
@@ -27,20 +32,25 @@ func (api Api) CreatedBin(name, file string) {
 		fmt.Println("статус приватности должен быть true или false")
 		return
 	}
-	bin, errbin := bins.NewBinCreate(name)
-	if errbin != nil {
-		fmt.Println(errbin)
+	Bin, err := bins.NewBinCreate(name)
+	if err != nil {
+		color.Red(err.Error())
 		return
 	}
-	_, _, erro := storage.NewStorage(files.NewJsonDb(file))
+	storages, _, erro := storage.NewStorage(files.NewJsonDb(file))
 	if erro != nil {
 		color.Red(erro.Error())
 		return
 	} else {
 		color.Green("Запись в файл %s прошла успешно\n", file)
 	}
-	data, errJs := json.Marshal(bin)
-	if errJs != nil {
+	erro = storages.AddStorage(*Bin)
+	if erro != nil {
+		color.Red(erro.Error())
+	}
+	var data []byte
+	errJs := json.Unmarshal(data, &storages)
+	if errJs != nil{
 		fmt.Println(errJs)
 		return
 	}
@@ -63,26 +73,29 @@ func (api Api) CreatedBin(name, file string) {
 		fmt.Println("Отправка бина прошла успешно, ваш id:", b.Id)
 }
 func (api Api) UpdateBin(id, file string) {
-	bin, errbin := bins.NewBinUpdate(id)
-	if errbin != nil {
-		fmt.Println(errbin)
+	Bin, err := bins.NewBinUpdate(id)
+	if err != nil {
+		color.Red(err.Error())
 		return
 	}
-storages, _, erro := storage.NewStorage(files.NewJsonDb(file))
+	storages, _, erro := storage.NewStorage(files.NewJsonDb(file))
 	if erro != nil {
 		color.Red(erro.Error())
 		return
-	} 
-	 erro = storages.AddStorage(*bin)
-  if erro != nil {
-    color.Red(erro.Error())
-  }
-  data, errJs := json.Marshal(bin)
-	if errJs != nil {
+	} else {
+		color.Green("Запись в файл %s прошла успешно\n", file)
+	}
+	erro = storages.AddStorage(*Bin)
+	if erro != nil {
+		color.Red(erro.Error())
+	}
+	var data []byte
+	errJs := json.Unmarshal(data, &storages)
+	if errJs != nil{
 		fmt.Println(errJs)
 		return
 	}
-  reque, errReque := http.NewRequest("PUT", "https://api.jsonbin.io/v3/b/"+id, bytes.NewBuffer(data))
+  reque, errReque := http.NewRequest("PUT", "https://api.jsonbin.io/v3/"+id, bytes.NewBuffer(data))
 	if errReque != nil {
 		fmt.Println(errReque)
 		return
@@ -96,7 +109,7 @@ storages, _, erro := storage.NewStorage(files.NewJsonDb(file))
 	}
 }
 func (api Api) DeleteBin(id string) {
-	reque, errReque := http.NewRequest("DELETE", "https://api.jsonbin.io/v3/b/"+id, nil)
+	reque, errReque := http.NewRequest("DELETE", "https://api.jsonbin.io/v3/"+id, nil)
 	if errReque != nil {
 		fmt.Println(errReque)
 	}
@@ -108,7 +121,7 @@ func (api Api) DeleteBin(id string) {
 	}
 }
 func (api Api) GetBin(id string) {
-	reque, errReque := http.NewRequest("GET", "https://api.jsonbin.io/v3/b/"+id, nil)
+	reque, errReque := http.NewRequest("GET", "https://api.jsonbin.io/v3/"+id, nil)
 	if errReque != nil {
 		fmt.Println(errReque)
 		return
@@ -136,7 +149,7 @@ func sendingRequest(reque *http.Request) ([]byte, bool){
 		fmt.Println("Error code:", resp.StatusCode)
 		return nil, false
 	}
-	data, errRead := io.ReadAll(reque.Body)
+	data, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
 		fmt.Println(errRead)
 		return nil, false
