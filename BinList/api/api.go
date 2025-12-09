@@ -44,11 +44,10 @@ func (api Api) CreatedBin(name, file string) {
 	} else {
 		color.Green("Запись в файл %s прошла успешно\n", file)
 	}
-	erro = storages.AddStorage(*Bin)
+	data, erro := storages.AddStorage(*Bin)
 	if erro != nil {
 		color.Red(erro.Error())
 	}
-	var data []byte
 	errJs := json.Unmarshal(data, &storages)
 	if errJs != nil{
 		fmt.Println(errJs)
@@ -85,11 +84,10 @@ func (api Api) UpdateBin(id, file string) {
 	} else {
 		color.Green("Запись в файл %s прошла успешно\n", file)
 	}
-	erro = storages.AddStorage(*Bin)
+	data, erro := storages.AddStorage(*Bin)
 	if erro != nil {
 		color.Red(erro.Error())
 	}
-	var data []byte
 	errJs := json.Unmarshal(data, &storages)
 	if errJs != nil{
 		fmt.Println(errJs)

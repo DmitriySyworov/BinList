@@ -43,13 +43,13 @@ func NewStorage(db Db) (*StorageWithBd, string, error) {
 		Db:      db,
 	}, names, nil
 }
-func (bins *StorageWithBd) AddStorage(bin bins.Bin) error {
+func (bins *StorageWithBd) AddStorage(bin bins.Bin) ([]byte, error) {
 	bins.Bins = append(bins.Bins, bin)
 	bins.UpdateAt = time.Now()
 	file, err := json.Marshal(bins)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	bins.Db.Write(file)
-	return nil
+	return file, nil
 }
