@@ -19,7 +19,8 @@ import (
 type Api struct {
 	keyEnv *config.Config
 }
-func Newapi()*Api{
+
+func Newapi() *Api {
 	return &Api{
 		keyEnv: config.NewConfig(),
 	}
@@ -49,11 +50,11 @@ func (api Api) CreatedBin(name, file string) {
 		color.Red(erro.Error())
 	}
 	errJs := json.Unmarshal(data, &storages)
-	if errJs != nil{
+	if errJs != nil {
 		fmt.Println(errJs)
 		return
 	}
-	reque, errReque := http.NewRequest("POST", "https://api.jsonbin.io/v3", bytes.NewBuffer(data))
+	reque, errReque := http.NewRequest("POST", "https://api.jsonbin.io/v3/b/", bytes.NewBuffer(data))
 	if errReque != nil {
 		fmt.Println(errReque)
 		return
@@ -62,14 +63,14 @@ func (api Api) CreatedBin(name, file string) {
 	reque.Header.Set("X-Access-Key", api.keyEnv.MasterKey)
 	reque.Header.Set("Content-Type", "application/json")
 	reque.Header.Set("X-Bin-Private", status)
-	resDatas, _:= sendingRequest(reque)
-	var b bins.Bin
+	resDatas, _ := sendingRequest(reque)
+	var b storage.Storage
 	errJss := json.Unmarshal(resDatas, &b)
-		if errJss != nil{
-			fmt.Println(errJss)
-			return
-		}
-		fmt.Println("Отправка бина прошла успешно, ваш id:", b.Id)
+	if errJss != nil {
+		fmt.Println(errJss)
+		return
+	}
+	fmt.Println("Отправка бина прошла успешно")
 }
 func (api Api) UpdateBin(id, file string) {
 	Bin, err := bins.NewBinUpdate(id)
@@ -89,11 +90,11 @@ func (api Api) UpdateBin(id, file string) {
 		color.Red(erro.Error())
 	}
 	errJs := json.Unmarshal(data, &storages)
-	if errJs != nil{
+	if errJs != nil {
 		fmt.Println(errJs)
 		return
 	}
-  reque, errReque := http.NewRequest("PUT", "https://api.jsonbin.io/v3/"+id, bytes.NewBuffer(data))
+	reque, errReque := http.NewRequest("PUT", "https://api.jsonbin.io/v3/b/"+id, bytes.NewBuffer(data))
 	if errReque != nil {
 		fmt.Println(errReque)
 		return
@@ -107,7 +108,7 @@ func (api Api) UpdateBin(id, file string) {
 	}
 }
 func (api Api) DeleteBin(id string) {
-	reque, errReque := http.NewRequest("DELETE", "https://api.jsonbin.io/v3/"+id, nil)
+	reque, errReque := http.NewRequest("DELETE", "https://api.jsonbin.io/v3/b/"+id, nil)
 	if errReque != nil {
 		fmt.Println(errReque)
 	}
@@ -119,7 +120,7 @@ func (api Api) DeleteBin(id string) {
 	}
 }
 func (api Api) GetBin(id string) {
-	reque, errReque := http.NewRequest("GET", "https://api.jsonbin.io/v3/"+id, nil)
+	reque, errReque := http.NewRequest("GET", "https://api.jsonbin.io/v3/b/"+id, nil)
 	if errReque != nil {
 		fmt.Println(errReque)
 		return
@@ -127,20 +128,20 @@ func (api Api) GetBin(id string) {
 	reque.Header.Set("X-Master-Key", api.keyEnv.MasterKey)
 	reque.Header.Set("X-Access-Key", api.keyEnv.AccessKey)
 	data, _ := sendingRequest(reque)
-	var bin bins.Bin
-	errJs := json.Unmarshal(data, &bin)
+	var stor storage.Storage
+	errJs := json.Unmarshal(data, &stor)
 	if errJs != nil {
 		fmt.Println(errJs)
 	}
-	fmt.Printf("Name: %s\nID: %s\ntime of creation: %s\n", bin.Name, bin.Id, bin.CreatedAt)
+	fmt.Println(stor)
 }
 
-func sendingRequest(reque *http.Request) ([]byte, bool){
+func sendingRequest(reque *http.Request) ([]byte, bool) {
 	client := &http.Client{}
 	resp, errResp := client.Do(reque)
 	if errResp != nil {
 		fmt.Println(errResp)
-		return nil, false 
+		return nil, false
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -154,19 +155,19 @@ func sendingRequest(reque *http.Request) ([]byte, bool){
 	}
 	return data, true
 }
-func ListBin()error{
+func ListBin() error {
 	allFiles, errDier := os.ReadDir(".")
 	if errDier != nil {
 		return errDier
 	}
 	var sliceFile []string
-	for _, value := range allFiles{
-		if strings.HasSuffix(value.Name(), ".json"){
+	for _, value := range allFiles {
+		if strings.HasSuffix(value.Name(), ".json") {
 			sliceFile = append(sliceFile, value.Name())
 		}
 	}
 	var sliceList []storage.Storage
-	for _, file := range sliceFile{
+	for _, file := range sliceFile {
 		data, errRead := os.ReadFile(file)
 		if errRead != nil {
 			return errRead
@@ -176,16 +177,15 @@ func ListBin()error{
 		if errJs != nil {
 			return errJs
 		}
-	sliceList = append(sliceList, listen)
+		sliceList = append(sliceList, listen)
 	}
 	var sliceBin []bins.Bin
-	for _, store  := range sliceList{
-		binss :=  store.Bins
+	for _, store := range sliceList {
+		binss := store.Bins
 		sliceBin = append(sliceBin, binss...)
 	}
-	for _, bin := range sliceBin{
-		fmt.Printf("name: %s | ID: %s\n",bin.Name, bin.Id)
+	for _, bin := range sliceBin {
+		fmt.Printf("name: %s | ID: %s\n", bin.Name, bin.Id)
 	}
 	return nil
-}	
-
+}
