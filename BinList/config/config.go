@@ -1,6 +1,10 @@
 package config
 
-import "os"
+import (
+	"os"
+
+	"github.com/fatih/color"
+)
 
 type Config struct {
 	MasterKey string
@@ -8,13 +12,13 @@ type Config struct {
 }
 
 func NewConfig() *Config {
-	keyMaster := os.Getenv("MasterKey")
+	keyMaster := os.Getenv("Master")
 	if keyMaster == "" {
-		panic("Переменная окружения MasterKey  не задана!")
+		panic(color.RedString("Переменная окружения MasterKey  не задана!"))
 	}
-	keyAccess := os.Getenv("AccessKey")
+	keyAccess := os.Getenv("Access")
 	if keyAccess == "" {
-		panic("Переменная окружения AccessKey не задана!")
+		panic(color.RedString("Переменная окружения AccessKey не задана!"))
 	}
 	return &Config{
 		MasterKey: keyMaster,

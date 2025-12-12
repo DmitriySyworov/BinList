@@ -6,38 +6,30 @@ import (
 	"strings"
 )
 
-type JsonDb struct {
-	FileName string
-}
-
-func NewJsonDb(name string) *JsonDb {
-	return &JsonDb{
-		FileName: name,
-	}
-}
-func (db *JsonDb) Read() ([]byte, string, error, error) {
-	isMatched := strings.HasSuffix(db.FileName, ".json")
-	if !isMatched {
-		return nil, db.FileName, nil, errors.New("Вы указали неправильный формат. Заполните по следующему образцу: nameFile.json")
-	}
-	data, err := os.ReadFile(db.FileName)
-	if err != nil {
-		return nil, db.FileName, err, nil
-	}
-	return data, db.FileName, nil, nil
-}
-func (db *JsonDb) Write(data []byte) (error, error) {
-	isMatched := strings.HasSuffix(db.FileName, ".json")
+func Read(fileName string) ([]byte, error) {
+	isMatched := strings.HasSuffix(fileName, ".json")
 	if !isMatched {
 		return nil, errors.New("Вы указали неправильный формат. Заполните по следующему образцу: nameFile.json")
 	}
-	files, err1 := os.Create(db.FileName)
-	if err1 != nil {
-		return err1, nil
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		return nil, nil
 	}
+	return data,  nil
+}
+func Write(fileName string, data []byte) error{
+	isMatched := strings.HasSuffix(fileName, ".json")
+	if !isMatched {
+		return errors.New("Вы указали неправильный формат. Заполните по следующему образцу: nameFile.json")
+	}
+	files, err1 := os.Create(fileName)
+	if err1 != nil {
+		return err1
+	}
+	defer files.Close()
 	_, err2 := files.Write(data)
 	if err2 != nil {
-		return err2, nil
+		return err2
 	}
-	return nil, nil
+	return nil
 }

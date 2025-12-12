@@ -2,6 +2,7 @@ package main
 
 import (
 	"BinList/app/api"
+	"BinList/app/storage"
 	"flag"
 
 	"github.com/fatih/color"
@@ -11,7 +12,7 @@ import (
 func main() {
 	errEnv := godotenv.Load()
 	if errEnv != nil {
-		panic("Не удалось получить переменные окружения. Дальнейшее выполнение программы невозможно!")
+		panic(color.RedString("Не удалось получить переменные окружения. Дальнейшее выполнение программы невозможно!"))
 	}
 	menu()
 }
@@ -29,17 +30,37 @@ func menu() {
 	var ap api.Api
 	switch {
 	case *create:
-		ap.CreatedBin(*name, *file)
+		errCreate := ap.CreatedBin(*name, *file)
+		if errCreate != nil {
+			color.Red(errCreate.Error())
+			return
+		}
 	case *update:
-		ap.UpdateBin(*id, *file)
+		errUpdate := ap.UpdateBin(*id, *file)
+		if errUpdate != nil {
+			color.Red(errUpdate.Error())
+			return
+		}
 	case *delete:
-		ap.DeleteBin(*id)
+		errDelete := ap.DeleteBin(*id)
+		if errDelete != nil {
+			color.Red(errDelete.Error())
+			return
+		}
 	case *get:
-		ap.GetBin(*id)
+		errGet := ap.GetBin(*id)
+		if errGet != nil {
+			color.Red(errGet.Error())
+			return
+		}
 	case *list:
-		api.ListBin()
+		errList := storage.ListBin()
+		if errList != nil {
+			color.Red(errList.Error())
+			return
+		}
 	case *help:
-		color.Cyan(`--create --file=< > --name=< > Чтобы создать новый файл
+		color.Yellow(`--create --file=< > --name=< > Чтобы создать новый файл
 --update --file=< > --id=< > Чтобы обновить уже существующий файл
 --delete --id=< > Чтобы удалить файл 
 --get --id=< > Чтобы найти файл

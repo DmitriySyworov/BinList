@@ -1,17 +1,14 @@
 package api
 
 import (
-	"BinList/app/bins"
 	"BinList/app/config"
-	"BinList/app/files"
 	"BinList/app/storage"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"strings"
 
 	"github.com/fatih/color"
 )
@@ -19,173 +16,142 @@ import (
 type Api struct {
 	keyEnv *config.Config
 }
+type Meta struct {
+	Id string `json:"id"`
+}
+type CreatedResponce struct {
+	Metadata       Meta         `json:"metadata"`
+	Recorder storage.Storage `json:"record"`
+}
 
 func Newapi() *Api {
 	return &Api{
 		keyEnv: config.NewConfig(),
 	}
 }
-func (api Api) CreatedBin(name, file string) {
-	var status string
-	fmt.Println("Укажите статус true - публичный, false - приватный")
+func (api Api) CreatedBin(name, file string) error {
+	var status, password string
+	color.Cyan("Укажите ваш пароль. Если пароль не будет указан, он сгенерируется автоматически из 20 символов")
+	fmt.Scanln(&password)
+	color.Cyan("Укажите статус true - публичный, false - приватный")
 	fmt.Scan(&status)
 	if status != "true" && status != "false" {
-		fmt.Println("статус приватности должен быть true или false")
-		return
+		return errors.New("статус приватности должен быть true или false")
 	}
-	Bin, err := bins.NewBinCreate(name)
-	if err != nil {
-		color.Red(err.Error())
-		return
-	}
-	storages, _, erro := storage.NewStorage(files.NewJsonDb(file))
-	if erro != nil {
-		color.Red(erro.Error())
-		return
-	} else {
-		color.Green("Запись в файл %s прошла успешно\n", file)
-	}
-	data, erro := storages.AddStorage(*Bin)
-	if erro != nil {
-		color.Red(erro.Error())
-	}
-	errJs := json.Unmarshal(data, &storages)
-	if errJs != nil {
-		fmt.Println(errJs)
-		return
+	data, errLoc := storage.CreateLocal(name, "", password, status, file)
+	if errLoc != nil {
+		return errLoc
 	}
 	reque, errReque := http.NewRequest("POST", "https://api.jsonbin.io/v3/b/", bytes.NewBuffer(data))
 	if errReque != nil {
-		fmt.Println(errReque)
-		return
+		return errReque
 	}
-	reque.Header.Set("X-Master-Key", api.keyEnv.MasterKey)
-	reque.Header.Set("X-Access-Key", api.keyEnv.MasterKey)
+	k := Newapi()
+	reque.Header.Set("X-Master-Key", k.keyEnv.MasterKey)
+	reque.Header.Set("X-Access-Key", k.keyEnv.AccessKey)
 	reque.Header.Set("Content-Type", "application/json")
 	reque.Header.Set("X-Bin-Private", status)
-	resDatas, _ := sendingRequest(reque)
-	var b storage.Storage
-	errJss := json.Unmarshal(resDatas, &b)
-	if errJss != nil {
-		fmt.Println(errJss)
-		return
+	_, data, errResp := sendingRequest(reque)
+	if errResp != nil {
+		return errResp
 	}
-	fmt.Println("Отправка бина прошла успешно")
+	var creatResp CreatedResponce
+	json.Unmarshal(data, &creatResp)
+color.Green("Отправка бина прошла успешно, ваш ID: %s", creatResp.Metadata.Id)
+	_, errLoacals := storage.CreateLocal(name, creatResp.Metadata.Id, password, status, file)
+	if errLoacals != nil {
+		return errLoacals
+	}
+	return nil
 }
-func (api Api) UpdateBin(id, file string) {
-	Bin, err := bins.NewBinUpdate(id)
-	if err != nil {
-		color.Red(err.Error())
-		return
+func (api Api) UpdateBin(id, file string) error {
+	var name, status, password string
+	color.Cyan("Укажите имя")
+	fmt.Scan(&name)
+	color.Cyan("Укажите ваш пароль. Если пароль не будет указан, он сгенерируется автоматически из 20 символов")
+	fmt.Scanln(&password)
+	color.Cyan("Укажите статус true - публичный, false - приватный")
+	fmt.Scan(&status)
+	if status != "true" && status != "false" {
+		return errors.New("статус приватности должен быть true или false")
 	}
-	storages, _, erro := storage.NewStorage(files.NewJsonDb(file))
-	if erro != nil {
-		color.Red(erro.Error())
-		return
-	} else {
-		color.Green("Запись в файл %s прошла успешно\n", file)
+	data, errLoc := storage.UpdateLocal(name, id, password, status, file)
+	if errLoc != nil {
+		return errLoc
 	}
-	data, erro := storages.AddStorage(*Bin)
-	if erro != nil {
-		color.Red(erro.Error())
-	}
-	errJs := json.Unmarshal(data, &storages)
-	if errJs != nil {
-		fmt.Println(errJs)
-		return
-	}
+
 	reque, errReque := http.NewRequest("PUT", "https://api.jsonbin.io/v3/b/"+id, bytes.NewBuffer(data))
 	if errReque != nil {
-		fmt.Println(errReque)
-		return
+		return errReque
 	}
-	reque.Header.Set("X-Master-Key", api.keyEnv.MasterKey)
-	reque.Header.Set("X-Access-Key", api.keyEnv.MasterKey)
+	k := Newapi()
+	reque.Header.Set("X-Master-Key", k.keyEnv.MasterKey)
+	reque.Header.Set("X-Access-Key", k.keyEnv.MasterKey)
 	reque.Header.Set("Content-Type", "application/json")
-	_, ok := sendingRequest(reque)
-	if ok {
-		color.Green("Добавление в файл: %s прошла успешно", file)
+	_, _, errResp := sendingRequest(reque)
+	if errResp != nil {
+		return errResp
 	}
+
+	color.Green("Добавление в файл: %s прошла успешно", file)
+	return nil
 }
-func (api Api) DeleteBin(id string) {
+func (api Api) DeleteBin(id string) error {
 	reque, errReque := http.NewRequest("DELETE", "https://api.jsonbin.io/v3/b/"+id, nil)
 	if errReque != nil {
-		fmt.Println(errReque)
+		return errReque
 	}
-	reque.Header.Set("X-Master-Key", api.keyEnv.MasterKey)
-	reque.Header.Set("X-Access-Key", api.keyEnv.MasterKey)
-	_, ok := sendingRequest(reque)
-	if ok {
-		color.Green("Удление прошло успешно")
+	k := Newapi()
+	reque.Header.Set("X-Master-Key", k.keyEnv.MasterKey)
+	reque.Header.Set("X-Access-Key", k.keyEnv.MasterKey)
+	_, _, errResp := sendingRequest(reque)
+	if errResp != nil {
+		return errResp
 	}
+	color.Green("Удаление записи на внешнем сервисе прошло успешно")
+	errDel := storage.DeletedLocal(id)
+	if errDel != nil {
+		return errDel
+	}
+	return nil
 }
-func (api Api) GetBin(id string) {
+func (api Api) GetBin(id string) error {
 	reque, errReque := http.NewRequest("GET", "https://api.jsonbin.io/v3/b/"+id, nil)
 	if errReque != nil {
-		fmt.Println(errReque)
-		return
+		return errReque
 	}
-	reque.Header.Set("X-Master-Key", api.keyEnv.MasterKey)
-	reque.Header.Set("X-Access-Key", api.keyEnv.AccessKey)
-	data, _ := sendingRequest(reque)
-	var stor storage.Storage
-	errJs := json.Unmarshal(data, &stor)
+	k := Newapi()
+	reque.Header.Set("X-Master-Key", k.keyEnv.MasterKey)
+	reque.Header.Set("X-Access-Key", k.keyEnv.AccessKey)
+	_, data, errResp := sendingRequest(reque)
+	if errResp != nil {
+		return errResp
+	}
+	var rec CreatedResponce
+	errJs := json.Unmarshal(data, &rec)
 	if errJs != nil {
-		fmt.Println(errJs)
+		return errJs
 	}
-	fmt.Println(stor)
+	for _, value := range rec.Recorder.Bins{
+		color.Magenta("Name: %s\nID: %s\nPassword: %s\nPrivate: %s\nFileName: %s\nCreatTime: %s\n\n\n", value.Name, value.Id, value.Password, value.Private, value.LocalFile, value.CreatedAt)
+	}
+	return nil
 }
 
-func sendingRequest(reque *http.Request) ([]byte, bool) {
+func sendingRequest(reque *http.Request) (*http.Response, []byte, error) {
 	client := &http.Client{}
 	resp, errResp := client.Do(reque)
 	if errResp != nil {
-		fmt.Println(errResp)
-		return nil, false
+
+		return nil, nil, errResp
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		fmt.Println("Error code:", resp.StatusCode)
-		return nil, false
+		return nil, nil, errors.New(fmt.Sprintln("Error code:", resp.StatusCode))
 	}
-	data, errRead := io.ReadAll(resp.Body)
+	dataBody, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
-		fmt.Println(errRead)
-		return nil, false
+		return nil, nil, errRead
 	}
-	return data, true
-}
-func ListBin() error {
-	allFiles, errDier := os.ReadDir(".")
-	if errDier != nil {
-		return errDier
-	}
-	var sliceFile []string
-	for _, value := range allFiles {
-		if strings.HasSuffix(value.Name(), ".json") {
-			sliceFile = append(sliceFile, value.Name())
-		}
-	}
-	var sliceList []storage.Storage
-	for _, file := range sliceFile {
-		data, errRead := os.ReadFile(file)
-		if errRead != nil {
-			return errRead
-		}
-		var listen storage.Storage
-		errJs := json.Unmarshal(data, &listen)
-		if errJs != nil {
-			return errJs
-		}
-		sliceList = append(sliceList, listen)
-	}
-	var sliceBin []bins.Bin
-	for _, store := range sliceList {
-		binss := store.Bins
-		sliceBin = append(sliceBin, binss...)
-	}
-	for _, bin := range sliceBin {
-		fmt.Printf("name: %s | ID: %s\n", bin.Name, bin.Id)
-	}
-	return nil
+	return resp, dataBody, nil
 }

@@ -2,35 +2,53 @@ package bins
 
 import (
 	"errors"
-	"fmt"
+	"math/rand"
 	"time"
 )
 
 type Bin struct {
 	Name      string    `json:"name"`
 	Id        string    `json:"ID"`
+	Password  string    `json:"password"`
+	Private   string    `json:"private"`
+	LocalFile string    `json:"localFile"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
-func NewBinCreate(name string) (*Bin, error) {
+func NewBin(name, id, password, private, file string) (*Bin, error) {
 	for _, value := range name {
 		if (value < 'a' || value > 'z') && (value < 'A' || value > 'Z') {
 			return nil, errors.New("Указано не корректное имя")
 		}
 	}
+	newPassword := ""
+	if password == "" {
+	newPassword = makePassword()
+	} else {
+	newPassword = password
+	}
+
 	return &Bin{
 		Name:      name,
-		Id:        "",
-		CreatedAt: time.Now(),
-	}, nil
-}
-func NewBinUpdate(id string) (*Bin, error) {
-	return &Bin{
-		Name:      "",
 		Id:        id,
+		Password:  newPassword,
+		Private:   private,
+		LocalFile: file,
 		CreatedAt: time.Now(),
 	}, nil
 }
-func (bin *Bin) OutputBins() {
-	fmt.Printf("name: %s\n ID: %s\n createdAt: %s\n", bin.Name, bin.Id, bin.CreatedAt)
+func makePassword() string {
+	var trueRand []byte
+	stop := 0
+	for { 
+		random := rand.Intn(127)
+		if random > 32{
+		trueRand = append(trueRand, byte(random))
+		stop++
+		}
+		if stop == 20{
+			break
+		}
+}
+return string(trueRand)
 }
