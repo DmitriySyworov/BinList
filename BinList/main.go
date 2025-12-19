@@ -42,12 +42,14 @@ func menu() {
 			return
 		}
 	case *update:
-		var status, password string
+		var status, password, name string
+	color.Cyan("Укажите имя")
+	fmt.Scan(&name)
 	color.Cyan("Укажите ваш пароль. Если пароль не будет указан, он сгенерируется автоматически из 20 символов")
 	fmt.Scanln(&password)
 		color.Cyan("Укажите статус true - публичный, false - приватный")
 		fmt.Scan(&status)
-		errUpdate := ap.UpdateBin(*id, *file, status, password)
+		errUpdate := ap.UpdateBin(*id, *file, status, password,name)
 		if errUpdate != nil {
 			color.Red(errUpdate.Error())
 			return

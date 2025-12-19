@@ -80,7 +80,7 @@ func (api Api) CreatedBin(name, file, status, password string) ([]byte, error) {
 	return data, nil
 }
 var ErrId = errors.New("Not_ID")
-func (api Api) UpdateBin(id, file, status, password string)error {
+func (api Api) UpdateBin(id, file, status, password, name string)error {
 	if file == ""{
 		return ErrNotFile
 	}
@@ -90,9 +90,6 @@ func (api Api) UpdateBin(id, file, status, password string)error {
 	if status != "true" && status != "false" {
 		return ErrStatus
 	}
-	var name string
-	color.Cyan("Укажите имя")
-	fmt.Scan(&name)
 	data, errLoc := storage.UpdateLocal(name, id, password, status, file)
 	if errLoc != nil {
 		return errLoc
