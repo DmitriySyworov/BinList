@@ -1,7 +1,6 @@
 package api
 
 import (
-	"BinList/app/config"
 	"BinList/app/storage"
 	"bytes"
 	"encoding/json"
@@ -9,104 +8,131 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/fatih/color"
 )
 
 type Api struct {
-	keyEnv *config.Config
+	MasterKey string
+	AccessKey string
 }
 type Meta struct {
 	Id string `json:"id"`
 }
 type CreatedResponce struct {
-	Metadata       Meta         `json:"metadata"`
+	Metadata Meta            `json:"metadata"`
 	Recorder storage.Storage `json:"record"`
 }
 
 func Newapi() *Api {
+	keyMaster := os.Getenv("Master")
+	if keyMaster == "" {
+		panic(color.RedString("Переменная окружения MasterKey  не задана!"))
+	}
+	keyAccess := os.Getenv("Access")
+	if keyAccess == "" {
+		panic(color.RedString("Переменная окружения AccessKey не задана!"))
+	}
 	return &Api{
-		keyEnv: config.NewConfig(),
+		MasterKey: keyMaster,
+		AccessKey: keyAccess,
 	}
 }
-func (api Api) CreatedBin(name, file string) error {
-	var status, password string
+
+var ErrNotName = errors.New("Not_Name")
+var ErrNotFile = errors.New("Not_File")
+var ErrStatus = errors.New("статус приватности должен быть true или false")
+func (api Api) CreatedBin(name, file, status string) (bool, error) {
+	if name == "" {
+		return false, ErrNotName
+	}
+	if file == "" {
+		return false, ErrNotFile
+	}
+	if status != "true" && status != "false" {
+		return false, ErrStatus
+	}
+	var password string
 	color.Cyan("Укажите ваш пароль. Если пароль не будет указан, он сгенерируется автоматически из 20 символов")
 	fmt.Scanln(&password)
-	color.Cyan("Укажите статус true - публичный, false - приватный")
-	fmt.Scan(&status)
-	if status != "true" && status != "false" {
-		return errors.New("статус приватности должен быть true или false")
-	}
 	data, errLoc := storage.CreateLocal(name, "", password, status, file)
 	if errLoc != nil {
-		return errLoc
+		return false,  errLoc
 	}
 	reque, errReque := http.NewRequest("POST", "https://api.jsonbin.io/v3/b/", bytes.NewBuffer(data))
 	if errReque != nil {
-		return errReque
+		return false, errReque
 	}
 	k := Newapi()
-	reque.Header.Set("X-Master-Key", k.keyEnv.MasterKey)
-	reque.Header.Set("X-Access-Key", k.keyEnv.AccessKey)
+	reque.Header.Set("X-Master-Key", k.MasterKey)
+	reque.Header.Set("X-Access-Key", k.AccessKey)
 	reque.Header.Set("Content-Type", "application/json")
 	reque.Header.Set("X-Bin-Private", status)
 	_, data, errResp := sendingRequest(reque)
 	if errResp != nil {
-		return errResp
+		return false, errResp
 	}
 	var creatResp CreatedResponce
 	json.Unmarshal(data, &creatResp)
-color.Green("Отправка бина прошла успешно, ваш ID: %s", creatResp.Metadata.Id)
+	color.Green("Отправка бина прошла успешно, ваш ID: %s", creatResp.Metadata.Id)
 	_, errLoacals := storage.CreateLocal(name, creatResp.Metadata.Id, password, status, file)
 	if errLoacals != nil {
-		return errLoacals
+		return false, errLoacals
 	}
-	return nil
+	return true, nil
 }
-func (api Api) UpdateBin(id, file string) error {
-	var name, status, password string
+var ErrId = errors.New("Not_ID")
+func (api Api) UpdateBin(id, file, status string)(bool, error) {
+	if file == ""{
+		return false, ErrNotFile
+	}
+	if id == ""{
+		return false, ErrId
+	}
+	if status != "true" && status != "false" {
+		return false, ErrStatus
+	}
+	var name, password string
 	color.Cyan("Укажите имя")
 	fmt.Scan(&name)
 	color.Cyan("Укажите ваш пароль. Если пароль не будет указан, он сгенерируется автоматически из 20 символов")
 	fmt.Scanln(&password)
-	color.Cyan("Укажите статус true - публичный, false - приватный")
-	fmt.Scan(&status)
-	if status != "true" && status != "false" {
-		return errors.New("статус приватности должен быть true или false")
-	}
 	data, errLoc := storage.UpdateLocal(name, id, password, status, file)
 	if errLoc != nil {
-		return errLoc
+		return false, errLoc
 	}
 
 	reque, errReque := http.NewRequest("PUT", "https://api.jsonbin.io/v3/b/"+id, bytes.NewBuffer(data))
 	if errReque != nil {
-		return errReque
+		return false, errReque
 	}
 	k := Newapi()
-	reque.Header.Set("X-Master-Key", k.keyEnv.MasterKey)
-	reque.Header.Set("X-Access-Key", k.keyEnv.MasterKey)
+	reque.Header.Set("X-Master-Key", k.MasterKey)
+	reque.Header.Set("X-Access-Key", k.MasterKey)
 	reque.Header.Set("Content-Type", "application/json")
 	_, _, errResp := sendingRequest(reque)
 	if errResp != nil {
-		return errResp
+		return false, errResp
 	}
 
 	color.Green("Добавление в файл: %s прошла успешно", file)
-	return nil
+	return true, nil
 }
 func (api Api) DeleteBin(id string) error {
+	if id == ""{
+		return ErrId
+	}
 	reque, errReque := http.NewRequest("DELETE", "https://api.jsonbin.io/v3/b/"+id, nil)
 	if errReque != nil {
 		return errReque
 	}
 	k := Newapi()
-	reque.Header.Set("X-Master-Key", k.keyEnv.MasterKey)
-	reque.Header.Set("X-Access-Key", k.keyEnv.MasterKey)
+	reque.Header.Set("X-Master-Key", k.MasterKey)
+	reque.Header.Set("X-Access-Key", k.MasterKey)
 	_, _, errResp := sendingRequest(reque)
 	if errResp != nil {
-		return errResp
+		return Err400
 	}
 	color.Green("Удаление записи на внешнем сервисе прошло успешно")
 	errDel := storage.DeletedLocal(id)
@@ -115,24 +141,28 @@ func (api Api) DeleteBin(id string) error {
 	}
 	return nil
 }
+var Err400 = errors.New("Error_Code_400")
 func (api Api) GetBin(id string) error {
+	if id == ""{
+		return  ErrId
+	}
 	reque, errReque := http.NewRequest("GET", "https://api.jsonbin.io/v3/b/"+id, nil)
 	if errReque != nil {
 		return errReque
 	}
 	k := Newapi()
-	reque.Header.Set("X-Master-Key", k.keyEnv.MasterKey)
-	reque.Header.Set("X-Access-Key", k.keyEnv.AccessKey)
+	reque.Header.Set("X-Master-Key", k.MasterKey)
+	reque.Header.Set("X-Access-Key", k.AccessKey)
 	_, data, errResp := sendingRequest(reque)
 	if errResp != nil {
-		return errResp
+		return Err400
 	}
 	var rec CreatedResponce
 	errJs := json.Unmarshal(data, &rec)
 	if errJs != nil {
 		return errJs
 	}
-	for _, value := range rec.Recorder.Bins{
+	for _, value := range rec.Recorder.Bins {
 		color.Magenta("Name: %s\nID: %s\nPassword: %s\nPrivate: %s\nFileName: %s\nCreatTime: %s\n\n\n", value.Name, value.Id, value.Password, value.Private, value.LocalFile, value.CreatedAt)
 	}
 	return nil

@@ -1,13 +1,12 @@
 package bins
 
 import (
-	"errors"
 	"math/rand"
 	"time"
 )
 
 type Bin struct {
-	Name      string    `json:"name"`
+	Name      string    `json:"Name"`
 	Id        string    `json:"ID"`
 	Password  string    `json:"password"`
 	Private   string    `json:"private"`
@@ -16,16 +15,11 @@ type Bin struct {
 }
 
 func NewBin(name, id, password, private, file string) (*Bin, error) {
-	for _, value := range name {
-		if (value < 'a' || value > 'z') && (value < 'A' || value > 'Z') {
-			return nil, errors.New("Указано не корректное имя")
-		}
-	}
 	newPassword := ""
 	if password == "" {
-	newPassword = makePassword()
+		newPassword = makePassword()
 	} else {
-	newPassword = password
+		newPassword = password
 	}
 
 	return &Bin{
@@ -40,15 +34,15 @@ func NewBin(name, id, password, private, file string) (*Bin, error) {
 func makePassword() string {
 	var trueRand []byte
 	stop := 0
-	for { 
+	for {
 		random := rand.Intn(127)
-		if random > 32{
-		trueRand = append(trueRand, byte(random))
-		stop++
+		if random > 32 {
+			trueRand = append(trueRand, byte(random))
+			stop++
 		}
-		if stop == 20{
+		if stop == 20 {
 			break
 		}
-}
-return string(trueRand)
+	}
+	return string(trueRand)
 }
