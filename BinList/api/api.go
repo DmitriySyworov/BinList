@@ -43,7 +43,7 @@ func Newapi() *Api {
 var ErrNotName = errors.New("Not_Name")
 var ErrNotFile = errors.New("Not_File")
 var ErrStatus = errors.New("статус приватности должен быть true или false")
-func (api Api) CreatedBin(name, file, status string) ([]byte, error) {
+func (api Api) CreatedBin(name, file, status, password string) ([]byte, error) {
 	if name == "" {
 		return nil, ErrNotName
 	}
@@ -53,9 +53,6 @@ func (api Api) CreatedBin(name, file, status string) ([]byte, error) {
 	if status != "true" && status != "false" {
 		return nil, ErrStatus
 	}
-	var password string
-	color.Cyan("Укажите ваш пароль. Если пароль не будет указан, он сгенерируется автоматически из 20 символов")
-	fmt.Scanln(&password)
 	data, errLoc := storage.CreateLocal(name, "", password, status, file)
 	if errLoc != nil {
 		return nil, errLoc
@@ -83,7 +80,7 @@ func (api Api) CreatedBin(name, file, status string) ([]byte, error) {
 	return data, nil
 }
 var ErrId = errors.New("Not_ID")
-func (api Api) UpdateBin(id, file, status string)error {
+func (api Api) UpdateBin(id, file, status, password string)error {
 	if file == ""{
 		return ErrNotFile
 	}
@@ -93,11 +90,9 @@ func (api Api) UpdateBin(id, file, status string)error {
 	if status != "true" && status != "false" {
 		return ErrStatus
 	}
-	var name, password string
+	var name string
 	color.Cyan("Укажите имя")
 	fmt.Scan(&name)
-	color.Cyan("Укажите ваш пароль. Если пароль не будет указан, он сгенерируется автоматически из 20 символов")
-	fmt.Scanln(&password)
 	data, errLoc := storage.UpdateLocal(name, id, password, status, file)
 	if errLoc != nil {
 		return errLoc

@@ -3,10 +3,22 @@ package api
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/joho/godotenv"
 )
+
+func TestMain(m *testing.M) {
+	dir, _ := os.Getwd()
+	file := filepath.Join(dir, ".env")
+	errEnv := godotenv.Load(file)
+	if errEnv != nil {
+		panic("Переменные окружения не считаны")
+	}
+	code := m.Run()
+	os.Exit(code)
+}
 
 var CaseCreated = []struct {
 	nameTest    string
@@ -22,10 +34,6 @@ var CaseCreated = []struct {
 }
 
 func TestCreatedBin(t *testing.T) {
-	errEnv := godotenv.Load("/home/dmitriy/GO_BinList/BinList/BinList/.env")
-	if errEnv != nil {
-		t.Error("Переменные окружения не считаны")
-	}
 	for _, test := range CaseCreated {
 		t.Run(test.nameTest, func(t *testing.T) {
 			t.Parallel()
@@ -33,7 +41,7 @@ func TestCreatedBin(t *testing.T) {
 				MasterKey: os.Getenv("Master"),
 				AccessKey: os.Getenv("Access"),
 			}
-			data, err := a.CreatedBin(test.name, test.file, test.status)
+			data, err := a.CreatedBin(test.name, test.file, test.status, "")
 			if err != test.expectedErr {
 				t.Errorf("Ожидалось ошибка %v, получаем %v", test.expectedErr, err)
 			}
@@ -57,10 +65,6 @@ var CaseUpdated = []struct {
 }
 
 func TestUpdateBinNegative(t *testing.T) {
-	errEnv := godotenv.Load("/home/dmitriy/GO_BinList/BinList/BinList/.env")
-	if errEnv != nil {
-		t.Error("Переменные окружения не считаны")
-	}
 	for _, test := range CaseUpdated {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -68,7 +72,7 @@ func TestUpdateBinNegative(t *testing.T) {
 				MasterKey: os.Getenv("Master"),
 				AccessKey: os.Getenv("Access"),
 			}
-			err := a.UpdateBin(test.id, test.file, test.status)
+			err := a.UpdateBin(test.id, test.file, test.status, "")
 			if err != test.expectedErr {
 				t.Errorf("Ожидалась ошибка %v, получаем %v", test.expectedErr, err)
 			}
@@ -81,7 +85,7 @@ func TestUpdateBin(t *testing.T) {
 	if errCreat != nil {
 		t.Errorf("Ожидалось успешное создание файла, получаем ошибку %v", errCreat)
 	}
-	 errTrue := a.UpdateBin(creatResp.Metadata.Id, "first.json", "true")
+	errTrue := a.UpdateBin(creatResp.Metadata.Id, "first.json", "true", "")
 	if errTrue != nil {
 		t.Errorf("Ожидалась удачное обновление файла, но мы получаем: %v", errTrue)
 	}
@@ -99,10 +103,6 @@ var CaseGetAndDelete = []struct {
 }
 
 func TestGetBinNegative(t *testing.T) {
-	errEnv := godotenv.Load("/home/dmitriy/GO_BinList/BinList/BinList/.env")
-	if errEnv != nil {
-		t.Error("Переменные окружения не считаны")
-	}
 	for _, test := range CaseGetAndDelete {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -129,10 +129,6 @@ func TestGetBin(t *testing.T) {
 	defer a.DeleteBin(creatResp.Metadata.Id)
 }
 func TestDeleteBinNegative(t *testing.T) {
-	errEnv := godotenv.Load("/home/dmitriy/GO_BinList/BinList/BinList/.env")
-	if errEnv != nil {
-		t.Error("Переменные окружения не считаны")
-	}
 	for _, test := range CaseGetAndDelete {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -158,15 +154,11 @@ func TestDeleteBin(t *testing.T) {
 	}
 }
 func createrTester() (*Api, *CreatedResponce, error) {
-	errEnv := godotenv.Load("/home/dmitriy/GO_BinList/BinList/BinList/.env")
-	if errEnv != nil {
-		panic("Переменные окружения не считаны")
-	}
 	a := &Api{
 		MasterKey: os.Getenv("Master"),
 		AccessKey: os.Getenv("Access"),
 	}
-	data, errCreat := a.CreatedBin("Dmitriy", "first.json", "true")
+	data, errCreat := a.CreatedBin("Dmitriy", "first.json", "true", "")
 	if errCreat != nil {
 		return nil, nil, errCreat
 	}
