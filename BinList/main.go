@@ -4,6 +4,7 @@ import (
 	"BinList/app/api"
 	"BinList/app/storage"
 	"flag"
+	"fmt"
 
 	"github.com/fatih/color"
 	"github.com/joho/godotenv"
@@ -30,13 +31,19 @@ func menu() {
 	var ap api.Api
 	switch {
 	case *create:
-		errCreate := ap.CreatedBin(*name, *file)
+		var status string
+		color.Cyan("Укажите статус true - публичный, false - приватный")
+		fmt.Scan(&status)
+		_, errCreate := ap.CreatedBin(*name, *file, status)
 		if errCreate != nil {
 			color.Red(errCreate.Error())
 			return
 		}
 	case *update:
-		errUpdate := ap.UpdateBin(*id, *file)
+		var status string
+		color.Cyan("Укажите статус true - публичный, false - приватный")
+		fmt.Scan(&status)
+		_, errUpdate := ap.UpdateBin(*id, *file, status)
 		if errUpdate != nil {
 			color.Red(errUpdate.Error())
 			return
