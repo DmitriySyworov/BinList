@@ -43,7 +43,7 @@ func menu() {
 		var status string
 		color.Cyan("Укажите статус true - публичный, false - приватный")
 		fmt.Scan(&status)
-		_, errUpdate := ap.UpdateBin(*id, *file, status)
+		errUpdate := ap.UpdateBin(*id, *file, status)
 		if errUpdate != nil {
 			color.Red(errUpdate.Error())
 			return

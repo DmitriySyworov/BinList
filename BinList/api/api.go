@@ -43,26 +43,26 @@ func Newapi() *Api {
 var ErrNotName = errors.New("Not_Name")
 var ErrNotFile = errors.New("Not_File")
 var ErrStatus = errors.New("статус приватности должен быть true или false")
-func (api Api) CreatedBin(name, file, status string) (bool, error) {
+func (api Api) CreatedBin(name, file, status string) ([]byte, error) {
 	if name == "" {
-		return false, ErrNotName
+		return nil, ErrNotName
 	}
 	if file == "" {
-		return false, ErrNotFile
+		return nil, ErrNotFile
 	}
 	if status != "true" && status != "false" {
-		return false, ErrStatus
+		return nil, ErrStatus
 	}
 	var password string
 	color.Cyan("Укажите ваш пароль. Если пароль не будет указан, он сгенерируется автоматически из 20 символов")
 	fmt.Scanln(&password)
 	data, errLoc := storage.CreateLocal(name, "", password, status, file)
 	if errLoc != nil {
-		return false,  errLoc
+		return nil, errLoc
 	}
 	reque, errReque := http.NewRequest("POST", "https://api.jsonbin.io/v3/b/", bytes.NewBuffer(data))
 	if errReque != nil {
-		return false, errReque
+		return nil,  errReque
 	}
 	k := Newapi()
 	reque.Header.Set("X-Master-Key", k.MasterKey)
@@ -71,27 +71,27 @@ func (api Api) CreatedBin(name, file, status string) (bool, error) {
 	reque.Header.Set("X-Bin-Private", status)
 	_, data, errResp := sendingRequest(reque)
 	if errResp != nil {
-		return false, errResp
+		return nil, errResp
 	}
 	var creatResp CreatedResponce
 	json.Unmarshal(data, &creatResp)
 	color.Green("Отправка бина прошла успешно, ваш ID: %s", creatResp.Metadata.Id)
 	_, errLoacals := storage.CreateLocal(name, creatResp.Metadata.Id, password, status, file)
 	if errLoacals != nil {
-		return false, errLoacals
+		return nil,errLoacals
 	}
-	return true, nil
+	return data, nil
 }
 var ErrId = errors.New("Not_ID")
-func (api Api) UpdateBin(id, file, status string)(bool, error) {
+func (api Api) UpdateBin(id, file, status string)error {
 	if file == ""{
-		return false, ErrNotFile
+		return ErrNotFile
 	}
 	if id == ""{
-		return false, ErrId
+		return  ErrId
 	}
 	if status != "true" && status != "false" {
-		return false, ErrStatus
+		return ErrStatus
 	}
 	var name, password string
 	color.Cyan("Укажите имя")
@@ -100,12 +100,12 @@ func (api Api) UpdateBin(id, file, status string)(bool, error) {
 	fmt.Scanln(&password)
 	data, errLoc := storage.UpdateLocal(name, id, password, status, file)
 	if errLoc != nil {
-		return false, errLoc
+		return errLoc
 	}
 
 	reque, errReque := http.NewRequest("PUT", "https://api.jsonbin.io/v3/b/"+id, bytes.NewBuffer(data))
 	if errReque != nil {
-		return false, errReque
+		return errReque
 	}
 	k := Newapi()
 	reque.Header.Set("X-Master-Key", k.MasterKey)
@@ -113,11 +113,11 @@ func (api Api) UpdateBin(id, file, status string)(bool, error) {
 	reque.Header.Set("Content-Type", "application/json")
 	_, _, errResp := sendingRequest(reque)
 	if errResp != nil {
-		return false, errResp
+		return errResp
 	}
 
 	color.Green("Добавление в файл: %s прошла успешно", file)
-	return true, nil
+	return nil
 }
 func (api Api) DeleteBin(id string) error {
 	if id == ""{
