@@ -37,7 +37,6 @@ var CaseCreated = []struct {
 func TestCreatedBin(t *testing.T) {
 	for _, test := range CaseCreated {
 		t.Run(test.nameTest, func(t *testing.T) {
-			t.Parallel()
 			a := &Api{
 				MasterKey: os.Getenv("Master"),
 				AccessKey: os.Getenv("Access"),
@@ -81,7 +80,6 @@ func TestUpdateBinNegative(t *testing.T) {
 	defer storage.DeletedLocal(creatResp.Metadata.Id)
 	for _, test := range CaseUpdated {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			err := a.UpdateBin(test.id, test.file, test.status, "", "Alexxc")
 			if err != test.expectedErr {
 				t.Errorf("Ожидалась ошибка %v, получаем %v", test.expectedErr, err)
@@ -133,7 +131,6 @@ func TestGetBinNegative(t *testing.T) {
 	defer storage.DeletedLocal(creatResp.Metadata.Id)
 	for _, test := range CaseGetAndDelete {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			err := a.GetBin(test.id)
 			if err != test.expectedErr {
 				t.Errorf("Ожидалась ошибка %v, получаем %v", test.expectedErr, err)
@@ -174,7 +171,6 @@ func TestDeleteBinNegative(t *testing.T) {
 	defer storage.DeletedLocal(creatResp.Metadata.Id)
 	for _, test := range CaseGetAndDelete {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			err := a.DeleteBin(test.id)
 			if err != test.expectedErr {
 				t.Errorf("Ожидалась ошибка %v, получаем %v", test.expectedErr, err)
