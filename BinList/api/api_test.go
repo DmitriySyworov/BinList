@@ -1,18 +1,18 @@
 package api
 
 import (
+	"BinList/app/storage"
 	"encoding/json"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/joho/godotenv"
 )
 
 func TestMain(m *testing.M) {
-	dir, _ := os.Getwd()
-	file := filepath.Join(dir, ".env")
-	errEnv := godotenv.Load(file)
+	//dir, _ := os.Getwd()
+	//file := filepath.Join(dir, ".env")
+	errEnv := godotenv.Load("/home/dmitriy/GO_BinList/BinList/BinList/.env")
 	if errEnv != nil {
 		panic("Переменные окружения не считаны")
 	}
@@ -27,10 +27,10 @@ var CaseCreated = []struct {
 	status      string
 	expectedErr error
 }{
-	{nameTest: "correct", name: "Xzinkes", file: "new.json", status: "false", expectedErr: nil},
-	{nameTest: "incorrectName", name: "", file: "second.json", status: "true", expectedErr: ErrNotName},
-	{nameTest: "incorrectFile", name: "Alex", file: "", status: "false", expectedErr: ErrNotFile},
-	{nameTest: "incorrectStatus", name: "Dmitriy", file: "third.json", status: "", expectedErr: ErrStatus},
+	{nameTest: "correct", name: "Xzinxzzkes", file: "news.json", status: "false", expectedErr: nil},
+	{nameTest: "incorrectName", name: "", file: "seconhhhd.json", status: "true", expectedErr: ErrNotName},
+	{nameTest: "incorrectFile", name: "Alexitre", file: "", status: "false", expectedErr: ErrNotFile},
+	{nameTest: "incorrectStatus", name: "Dmitvcriy", file: "thirdlmn.json", status: "", expectedErr: ErrStatus},
 }
 
 func TestCreatedBin(t *testing.T) {
@@ -48,6 +48,7 @@ func TestCreatedBin(t *testing.T) {
 			var creatResp CreatedResponce
 			json.Unmarshal(data, &creatResp)
 			defer a.DeleteBin(creatResp.Metadata.Id)
+			defer storage.DeletedLocal(creatResp.Metadata.Id)
 		})
 	}
 }
@@ -76,10 +77,11 @@ func TestUpdateBinNegative(t *testing.T) {
 	var creatResp CreatedResponce
 	json.Unmarshal(data, &creatResp)
 	defer a.DeleteBin(creatResp.Metadata.Id)
+	defer storage.DeletedLocal(creatResp.Metadata.Id)
 	for _, test := range CaseUpdated {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			err := a.UpdateBin(test.id, test.file, test.status, "", "Alex")
+			err := a.UpdateBin(test.id, test.file, test.status, "", "Alexxc")
 			if err != test.expectedErr {
 				t.Errorf("Ожидалась ошибка %v, получаем %v", test.expectedErr, err)
 			}
@@ -99,7 +101,8 @@ func TestUpdateBin(t *testing.T) {
 	var creatResp CreatedResponce
 	json.Unmarshal(data, &creatResp)
 	defer a.DeleteBin(creatResp.Metadata.Id)
-	errTrue := a.UpdateBin(creatResp.Metadata.Id, "first.json", "true", "", "Alex")
+	defer storage.DeletedLocal(creatResp.Metadata.Id)
+	errTrue := a.UpdateBin(creatResp.Metadata.Id, "wer.json", "true", "", "okli")
 	if errTrue != nil {
 		t.Errorf("Ожидалась удачное обновление файла, но мы получаем: %v", errTrue)
 	}
@@ -128,6 +131,7 @@ func TestGetBinNegative(t *testing.T) {
 	var creatResp CreatedResponce
 	json.Unmarshal(data, &creatResp)
 	defer a.DeleteBin(creatResp.Metadata.Id)
+	defer storage.DeletedLocal(creatResp.Metadata.Id)
 	for _, test := range CaseGetAndDelete {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -150,6 +154,7 @@ func TestGetBin(t *testing.T) {
 	var creatResp CreatedResponce
 	json.Unmarshal(data, &creatResp)
 	defer a.DeleteBin(creatResp.Metadata.Id)
+	defer storage.DeletedLocal(creatResp.Metadata.Id)
 	err := a.GetBin(creatResp.Metadata.Id)
 	if err != nil {
 		t.Errorf("Ожидалось удачное выполнение функции Get, получаем: %v", err)
@@ -160,13 +165,14 @@ func TestDeleteBinNegative(t *testing.T) {
 		MasterKey: os.Getenv("Master"),
 		AccessKey: os.Getenv("Access"),
 	}
-	data, errCreat := a.CreatedBin("Dmitriy2", "a.json", "true", "")
+	data, errCreat := a.CreatedBin("Dmitriy2ss", "a.json", "true", "")
 	if errCreat != nil {
 		t.Error(errCreat)
 	}
 	var creatResp CreatedResponce
 	json.Unmarshal(data, &creatResp)
 	defer a.DeleteBin(creatResp.Metadata.Id)
+	defer storage.DeletedLocal(creatResp.Metadata.Id)
 	for _, test := range CaseGetAndDelete {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -182,12 +188,13 @@ func TestDeleteBin(t *testing.T) {
 		MasterKey: os.Getenv("Master"),
 		AccessKey: os.Getenv("Access"),
 	}
-	data, errCreat := a.CreatedBin("Dmitriy", "first.json", "true", "")
+	data, errCreat := a.CreatedBin("Dmitrqqiy", "firstyt.json", "true", "")
 	if errCreat != nil {
 		t.Error(errCreat)
 	}
 	var creatResp CreatedResponce
 	json.Unmarshal(data, &creatResp)
+	defer storage.DeletedLocal(creatResp.Metadata.Id)
 	err := a.DeleteBin(creatResp.Metadata.Id)
 	if err != nil {
 		t.Errorf("Ожидалось удачное удаление, получаем ошибку: %v", err)
