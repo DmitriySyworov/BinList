@@ -65,11 +65,6 @@ var CaseUpdated = []struct {
 }
 
 func TestUpdateBinNegative(t *testing.T) {
-	a, resp, errCreat := createrTester()
-	if errCreat != nil {
-		t.Errorf("Ожидалось успешное создание файла, получаем ошибку %v", errCreat)
-	}
-	defer a.DeleteBin(resp.Metadata.Id)
 	for _, test := range CaseUpdated {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -108,11 +103,6 @@ var CaseGetAndDelete = []struct {
 }
 
 func TestGetBinNegative(t *testing.T) {
-	a, resp, errCreat := createrTester()
-	if errCreat != nil {
-		t.Errorf("Ожидалось успешное создание файла, получаем ошибку %v", errCreat)
-	}
-	defer a.DeleteBin(resp.Metadata.Id)
 	for _, test := range CaseGetAndDelete {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -139,11 +129,6 @@ func TestGetBin(t *testing.T) {
 	defer a.DeleteBin(creatResp.Metadata.Id)
 }
 func TestDeleteBinNegative(t *testing.T) {
-	a, resp, errCreat := createrTester()
-	if errCreat != nil {
-		t.Errorf("Ожидалось успешное создание файла, получаем ошибку %v", errCreat)
-	}
-	defer a.DeleteBin(resp.Metadata.Id)
 	for _, test := range CaseGetAndDelete {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
