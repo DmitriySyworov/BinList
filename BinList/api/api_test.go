@@ -4,15 +4,16 @@ import (
 	"BinList/app/storage"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/joho/godotenv"
 )
 
 func TestMain(m *testing.M) {
-	//dir, _ := os.Getwd()
-	//file := filepath.Join(dir, ".env")
-	errEnv := godotenv.Load("/home/dmitriy/GO_BinList/BinList/BinList/.env")
+	dir, _ := os.Getwd()
+	file := filepath.Join(dir, ".env")
+	errEnv := godotenv.Load(file)
 	if errEnv != nil {
 		panic("Переменные окружения не считаны")
 	}
@@ -106,8 +107,6 @@ func TestUpdateBin(t *testing.T) {
 	if errTrue != nil {
 		t.Errorf("Ожидалась удачное обновление файла, но мы получаем: %v", errTrue)
 	}
-
-	defer a.DeleteBin(creatResp.Metadata.Id)
 }
 
 var CaseGetAndDelete = []struct {
@@ -199,4 +198,5 @@ func TestDeleteBin(t *testing.T) {
 	if err != nil {
 		t.Errorf("Ожидалось удачное удаление, получаем ошибку: %v", err)
 	}
+	defer a.DeleteBin(creatResp.Metadata.Id)
 }
