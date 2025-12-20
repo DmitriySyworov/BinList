@@ -27,7 +27,7 @@ var CaseCreated = []struct {
 	status      string
 	expectedErr error
 }{
-	{nameTest: "correct", name: "Dmitriy", file: "first.json", status: "false", expectedErr: nil},
+	{nameTest: "correct", name: "Xzinkes", file: "new.json", status: "false", expectedErr: nil},
 	{nameTest: "incorrectName", name: "", file: "second.json", status: "true", expectedErr: ErrNotName},
 	{nameTest: "incorrectFile", name: "Alex", file: "", status: "false", expectedErr: ErrNotFile},
 	{nameTest: "incorrectStatus", name: "Dmitriy", file: "third.json", status: "", expectedErr: ErrStatus},
@@ -65,13 +65,20 @@ var CaseUpdated = []struct {
 }
 
 func TestUpdateBinNegative(t *testing.T) {
+	a := &Api{
+		MasterKey: os.Getenv("Master"),
+		AccessKey: os.Getenv("Access"),
+	}
+	data, errCreat := a.CreatedBin("ncxmc", "pllk.json", "true", "")
+	if errCreat != nil {
+		t.Error(errCreat)
+	}
+	var creatResp CreatedResponce
+	json.Unmarshal(data, &creatResp)
+	defer a.DeleteBin(creatResp.Metadata.Id)
 	for _, test := range CaseUpdated {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			a := &Api{
-				MasterKey: os.Getenv("Master"),
-				AccessKey: os.Getenv("Access"),
-			}
 			err := a.UpdateBin(test.id, test.file, test.status, "", "Alex")
 			if err != test.expectedErr {
 				t.Errorf("Ожидалась ошибка %v, получаем %v", test.expectedErr, err)
@@ -81,10 +88,17 @@ func TestUpdateBinNegative(t *testing.T) {
 	}
 }
 func TestUpdateBin(t *testing.T) {
-	a, creatResp, errCreat := createrTester()
-	if errCreat != nil {
-		t.Errorf("Ожидалось успешное создание файла, получаем ошибку %v", errCreat)
+	a := &Api{
+		MasterKey: os.Getenv("Master"),
+		AccessKey: os.Getenv("Access"),
 	}
+	data, errCreat := a.CreatedBin("jhhgg", "uuiu.json", "true", "")
+	if errCreat != nil {
+		t.Error(errCreat)
+	}
+	var creatResp CreatedResponce
+	json.Unmarshal(data, &creatResp)
+	defer a.DeleteBin(creatResp.Metadata.Id)
 	errTrue := a.UpdateBin(creatResp.Metadata.Id, "first.json", "true", "", "Alex")
 	if errTrue != nil {
 		t.Errorf("Ожидалась удачное обновление файла, но мы получаем: %v", errTrue)
@@ -103,13 +117,20 @@ var CaseGetAndDelete = []struct {
 }
 
 func TestGetBinNegative(t *testing.T) {
+	a := &Api{
+		MasterKey: os.Getenv("Master"),
+		AccessKey: os.Getenv("Access"),
+	}
+	data, errCreat := a.CreatedBin("Dhjh", "poii.json", "true", "")
+	if errCreat != nil {
+		t.Error(errCreat)
+	}
+	var creatResp CreatedResponce
+	json.Unmarshal(data, &creatResp)
+	defer a.DeleteBin(creatResp.Metadata.Id)
 	for _, test := range CaseGetAndDelete {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			a := &Api{
-				MasterKey: os.Getenv("Master"),
-				AccessKey: os.Getenv("Access"),
-			}
 			err := a.GetBin(test.id)
 			if err != test.expectedErr {
 				t.Errorf("Ожидалась ошибка %v, получаем %v", test.expectedErr, err)
@@ -118,24 +139,37 @@ func TestGetBinNegative(t *testing.T) {
 	}
 }
 func TestGetBin(t *testing.T) {
-	a, creatResp, errCreat := createrTester()
-	if errCreat != nil {
-		t.Errorf("Ожидалось успешное создание файла, получаем ошибку %v", errCreat)
+	a := &Api{
+		MasterKey: os.Getenv("Master"),
+		AccessKey: os.Getenv("Access"),
 	}
+	data, errCreat := a.CreatedBin("bbbb", "ccc.json", "true", "")
+	if errCreat != nil {
+		t.Error(errCreat)
+	}
+	var creatResp CreatedResponce
+	json.Unmarshal(data, &creatResp)
+	defer a.DeleteBin(creatResp.Metadata.Id)
 	err := a.GetBin(creatResp.Metadata.Id)
 	if err != nil {
 		t.Errorf("Ожидалось удачное выполнение функции Get, получаем: %v", err)
 	}
-	defer a.DeleteBin(creatResp.Metadata.Id)
 }
 func TestDeleteBinNegative(t *testing.T) {
+	a := &Api{
+		MasterKey: os.Getenv("Master"),
+		AccessKey: os.Getenv("Access"),
+	}
+	data, errCreat := a.CreatedBin("Dmitriy2", "a.json", "true", "")
+	if errCreat != nil {
+		t.Error(errCreat)
+	}
+	var creatResp CreatedResponce
+	json.Unmarshal(data, &creatResp)
+	defer a.DeleteBin(creatResp.Metadata.Id)
 	for _, test := range CaseGetAndDelete {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			a := &Api{
-				MasterKey: os.Getenv("Master"),
-				AccessKey: os.Getenv("Access"),
-			}
 			err := a.DeleteBin(test.id)
 			if err != test.expectedErr {
 				t.Errorf("Ожидалась ошибка %v, получаем %v", test.expectedErr, err)
@@ -144,25 +178,18 @@ func TestDeleteBinNegative(t *testing.T) {
 	}
 }
 func TestDeleteBin(t *testing.T) {
-	a, creatResp, errCreat := createrTester()
-	if errCreat != nil {
-		t.Errorf("Ожидалось успешное создание файла, получаем ошибку %v", errCreat)
-	}
-	err := a.DeleteBin(creatResp.Metadata.Id)
-	if err != nil {
-		t.Errorf("Ожидалось удачное удаление, получаем ошибку: %v", err)
-	}
-}
-func createrTester() (*Api, *CreatedResponce, error) {
 	a := &Api{
 		MasterKey: os.Getenv("Master"),
 		AccessKey: os.Getenv("Access"),
 	}
 	data, errCreat := a.CreatedBin("Dmitriy", "first.json", "true", "")
 	if errCreat != nil {
-		return nil, nil, errCreat
+		t.Error(errCreat)
 	}
 	var creatResp CreatedResponce
 	json.Unmarshal(data, &creatResp)
-	return a, &creatResp, nil
+	err := a.DeleteBin(creatResp.Metadata.Id)
+	if err != nil {
+		t.Errorf("Ожидалось удачное удаление, получаем ошибку: %v", err)
+	}
 }
